@@ -32,22 +32,20 @@ int		ft_check_old(int fd, t_line *old, char **line)
 	char	*temp;
 	int		got;
 
+	// printf("Check fd in first elem: %i\n", old->fd);
+	// printf("Check buff in list:\n=======================\n%s\n=======================\n", old->str);
 	while (old && old->fd != fd)
 		old = old->next;
 	if (old)
 	{
-		printf("Found list element with fd!\n");
-		printf("This buff keeps:\n%s\n", old->str);
 		got = ft_find_nl(old->str);
 		if (got == -1)
 		{
-			printf("No '/n' fot this fd\n");
 			*line = ft_strdup(old->str);
 			ft_bzero(old->str, BUFF_SIZE);
 		}
 		else
 		{
-			printf("Found '/n' fot this fd\n");
 			*line = ft_strnew(got);
 			*line = ft_memcpy(*line, old->str, got);
 			temp = ft_strsub(old->str, got + 1, ft_strlen(old->str) - got - 1);
@@ -64,11 +62,68 @@ void	ft_add_buff_to_line(char *buff, char **line)
 {
 	char	*temp;
 
-	temp = ft_strdup(*line);
-	ft_strdel(line);
-	*line = ft_strjoin(temp, buff);
+	if (*line)
+	{
+		temp = ft_strdup(*line);
+		ft_strdel(line);
+		*line = ft_strjoin(temp, buff);
+		ft_bzero(buff, BUFF_SIZE);
+	}
+	*line = ft_strdup(buff);
 	ft_bzero(buff, BUFF_SIZE);
+}
 
+void	ft_keep_rest(char *buff, t_line **old, int got, int fd)
+{
+	t_line	*temp;
+	t_line	*new;
+
+	if (!*old)
+	{
+		*old = (t_line*)malloc(sizeof(t_line));
+		(*old)->str = ft_strnew(BUFF_SIZE);
+		ft_memcpy((*old)->str, buff + got + 1, ft_strlen(buff) - got - 1);
+		(*old)->fd = fd;
+	}
+	else
+	{
+		temp = *old;
+		while (temp && temp->fd != fd)
+			temp = temp->next;
+		if (!temp)
+		{
+			new = (t_line*)malloc(sizeof(t_line));
+			new->str = ft_strnew(BUFF_SIZE);
+			new->str = ft_memcpy(new->str, buff + got, ft_strlen(buff) - got - 1);
+			new->fd = fd;
+			new->next = *old;
+			*old = new;
+		}
+		temp->str = ft_memcpy(temp->str, buff + got, ft_strlen(buff) - got - 1);
+		temp->fd = fd;
+	}
+}
+
+void	ft_gnl(char *buff, char **line, t_line **old, int got, int fd)
+{
+	char	*temp;
+
+	if (*line)
+	{
+		temp = ft_strdup(*line);
+		ft_strdel(line);
+		*line = ft_strnew(ft_strlen(temp) + got);
+		*line = ft_memcpy(*line, temp, ft_strlen(temp));
+		*line = ft_strncat(*line, buff, got);
+		ft_keep_rest(buff, old, got, fd);
+	}
+	else
+	{
+		//printf("There wasn't line at the start\n");
+		*line = ft_strnew(got);
+		*line = ft_memcpy(*line, buff, got);
+		ft_keep_rest(buff, old, got, fd);
+	}
 }
 
 int		get_next_line(int fd, char **line)
@@ -79,29 +134,35 @@ int		get_next_line(int fd, char **line)
 	
 	if (fd == -1 || BUFF_SIZE < 1 || !line)
 	{
-		printf("Something is wrong with you!\n");
+		// printf("Something is wrong with you!\n");
 		return (-1);
 	}
 
 	if (old != NULL)
 	{
-		printf("Found list with old info\n");
+		// printf("Found list with old info\n");
 		if (ft_check_old(fd, old, line) == 1)
 		{
-			printf("Line was in list.\n");
+			// printf("Line was in list.\n");
 			return (1);
 		}
 	}
 	buff = ft_strnew(BUFF_SIZE);
-	printf("Start reading from file\n");
+	// printf("Start reading from file\n");
 	while (read(fd, buff, BUFF_SIZE) > 0)
 	{
-		printf("Read buffer is:%s\n", buff);
+		// printf("Read buffer is:\n%s\n", buff);
 		got = ft_find_nl(buff);
 		if (got == -1)
 			ft_add_buff_to_line(buff, line);
+		else
+		{
+			ft_gnl(buff, line, &old, got, fd);
+			return (1);
+		}
 	}
-
+	ft_strdel(&buff);
+	return (0);
 }
 
 int		main(int ac, char **av)
@@ -110,10 +171,25 @@ int		main(int ac, char **av)
 	int		res;
 	char	*line;
 
-	if (ac != 2)
+	if (ac > 3)
 		return (1);
 	fd = open(av[1], O_RDONLY);
-	int i = 0;
+	int i = 1;
+	res = get_next_line(fd, &line);
+	 printf("line[%i] =\t%s\n", i, line);
+	i++;
+	while (res > 0)
+	{
+		res = get_next_line(fd, &line);
+		printf("line[%i] =\t%s\n", i, line);
+		free(line);
+		i++;	
+	}
+	close (fd);
+
+	printf("\n\n\n\n");
+	fd = open(av[2], O_RDONLY);
+	i = 1;
 	res = get_next_line(fd, &line);
 	 printf("line[%i] =\t%s\n", i, line);
 	i++;
