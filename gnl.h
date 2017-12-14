@@ -13,7 +13,7 @@
 #ifndef GNL_H
 
 # define GNL_H
-# define BUFF_SIZE 70
+# define BUFF_SIZE 1
 # include <stdlib.h>
 # include <stdio.h>
 # include <fcntl.h>
