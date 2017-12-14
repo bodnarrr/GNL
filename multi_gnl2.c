@@ -35,17 +35,19 @@ int		ft_check_old(int fd, t_line *old, char **line)
 		old = old->next;
 	if (old)
 	{
-		got = ft_find_nl(old->str);
 		if (ft_find_nl(old->str) == -1)
 		{
 			*line = ft_strdup(old->str);
-			ft_bzero(old->str, BUFF_SIZE;
+			ft_bzero(old->str, BUFF_SIZE);
 		}
 		else
 		{
-			*line = ft_strnew(got);
-			ft_memcpy(*line, old->str, got);
+			*line = ft_strnew(ft_find_nl(old->str));
+			ft_memcpy(*line, old->str, ft_find_nl(old->str));
+			temp = ft_strdup(old->str + ft_find_nl(old->str) + 1);
 			ft_bzero(old->str, BUFF_SIZE);
+			ft_memcpy(old->str, temp, ft_strlen(temp));
+			ft_strdel(&temp);
 			return (1);
 		}
 	}
@@ -85,6 +87,7 @@ void	ft_keep_rest(char *buff, t_line **old, int got, int fd)
 		ft_memcpy((*old)->str, buff + got + 1, BUFF_SIZE - got - 1);
 		ft_bzero(buff, BUFF_SIZE);
 		(*old)->fd = fd;
+		(*old)->next = NULL;
 	}
 	else
 	{
@@ -102,7 +105,8 @@ void	ft_keep_rest(char *buff, t_line **old, int got, int fd)
 			new->str = ft_strnew(BUFF_SIZE);
 			ft_memcpy(new->str, buff + got + 1, BUFF_SIZE - got - 1);
 			new->fd = fd;
-			
+			new->next = *old;
+			*old = new;
 		}
 	}
 }
@@ -134,14 +138,15 @@ int		get_next_line(int fd, char **line)
 {
 	static t_line	*old;
 	char			*buff;
-	int				got;
 	int				res;
 
+	t_line *tata = old;
+	while (tata)
+		tata = tata->next;
 	if (fd == -1 || BUFF_SIZE < 1 || !line)
 		return (-1);
-	if (old)
-		if (ft_check_old(fd, old, line))
-			return (1);
+	if (old && ft_check_old(fd, old, line))
+		return (1);
 	buff = ft_strnew(BUFF_SIZE);
 	while ((res = read(fd, buff, BUFF_SIZE)) > 0)
 	{
@@ -150,8 +155,13 @@ int		get_next_line(int fd, char **line)
 		else
 			return (ft_gnl_keep(buff, line, &old, ft_find_nl(buff), fd));
 	}
+	if (res == 0 && (!*line || !**line))
+	{
+		ft_strdel(line);
+		return (0);
+	}
 	ft_strdel(&buff);
-	if (*line)
+	if (*line && **line)
 		return (1);
 	return (0);
 }

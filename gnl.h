@@ -13,7 +13,7 @@
 #ifndef GNL_H
 
 # define GNL_H
-# define BUFF_SIZE 1
+# define BUFF_SIZE 10
 # include <stdlib.h>
 # include <stdio.h>
 # include <fcntl.h>
@@ -27,5 +27,7 @@ typedef struct		s_line
 	char			*str;
 	struct s_line	*next;
 } 					t_line;
+
+int		get_next_line(int fd, char **line);
 
 #endif
