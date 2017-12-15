@@ -39,5 +39,7 @@ int		main(int ac, char **av)
 
 	if ((close(fd)) == -1 || (close(fd2)) == -1)
 		return (1);
+
+	system("leaks a.out");
 	return (0);
 }
