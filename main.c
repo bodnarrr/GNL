@@ -10,36 +10,24 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "gnl.h"
+#include "get_next_line.h"
 
 int		main(int ac, char **av)
 {
 	int		res;
 	int		fd;
-	int		fd2;
 	char	*line;
-	char	*line2;
 
 	if (ac < 2)
 	{
 		printf("Pass agruments, please.\n");
 		return (1);
 	}
-
 	fd = open(av[1], O_RDONLY);
-	fd2 = open(av[2], O_RDONLY);
-	
 	while((res = get_next_line(fd, &line)) > 0)
 		printf("==line in main = %s\nres = %i\n", line, res);
-	printf("==last line in main = %s\nres = %i\n", line, res);
-
-	while((res = get_next_line(fd2, &line2)) > 0)
-		printf("==line in main = %s\nres = %i\n", line2, res);
-	printf("==last line in main = %s\nres = %i\n", line2, res);
-
-	if ((close(fd)) == -1 || (close(fd2)) == -1)
+	free(line);
+	if ((close(fd)) == -1)
 		return (1);
-
-	system("leaks a.out");
 	return (0);
 }
